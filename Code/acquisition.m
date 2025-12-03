@@ -5,14 +5,14 @@ function [u, y, realizations, power_levels] = acquisition(path)
     [realizations, power_levels] = detect_counts(path);
     
     % load a single file to get N
-    file = strcat(path, "out5kACQ_R0_P0_E0_M0_F0.mat");
+    file = strcat(path, "ACQ_R0_P0_E0_M0_F0.mat");
     disp(file);
     load(file);
     N = length(YR0);
 
     for r = 0:realizations-1
         for p = 0:power_levels-1
-            file = strcat(path, "out5kACQ_R", num2str(r), "_P", num2str(p), "_E0_M0_F0.mat");
+            file = strcat(path, "ACQ_R", num2str(r), "_P", num2str(p), "_E0_M0_F0.mat");
             load(file);
             u(:, r+1, p+1) = YR0(:);
             y(:, r+1, p+1) = YR1(:);
@@ -29,7 +29,7 @@ function [realizations, power_levels] = detect_counts(resultsPath)
 % detect realizations by probing P0 files starting at R0
     r = 0;
     while true
-        fname = fullfile(resultsPath, strcat("out5kACQ_R", num2str(r), "_P0_E0_M0_F0.mat"));
+        fname = fullfile(resultsPath, strcat("ACQ_R", num2str(r), "_P0_E0_M0_F0.mat"));
         if isfile(fname)
             r = r + 1;
         else
@@ -42,7 +42,7 @@ function [realizations, power_levels] = detect_counts(resultsPath)
     p = 0;
     if realizations > 0
         while true
-            fname = fullfile(resultsPath, strcat("out5kACQ_R0_P", num2str(p), "_E0_M0_F0.mat"));
+            fname = fullfile(resultsPath, strcat("ACQ_R0_P", num2str(p), "_E0_M0_F0.mat"));
             if isfile(fname)
                 p = p + 1;
             else

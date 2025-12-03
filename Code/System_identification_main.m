@@ -4,16 +4,24 @@ clear; close all; clc;
 
 %% Load data
 
-fs = 4000; %Hz
+fs = 6000; %Hz
 
 % assuming the excited freqeuencies are the same for all realizations and power levels
 %excitationpath = fullfile(pwd,'Excitation',filesep);
-excitationpath = fullfile(pwd,'Result','2111',strcat('Result_V3_',string(fs),'fs'),filesep);
-input_filname = 'Amaury_2111';
+excitationpath = fullfile(pwd,'Result','0312','Fast_2',filesep);
+%excitationpath = fullfile(pwd,'Result','0312','Robust_Full',filesep);
+%excitationpath = fullfile(pwd,'Result','0312','Robust_Odd',filesep);
+input_filname = 'Fast_0312';
+%input_filname = 'Robust_0312_Full';
+%input_filname = 'Robust_0312_Odd';
 load(strcat(excitationpath,input_filname,'_Sel_E0_S0.mat')); % loads variable 'sel'
 load(strcat(excitationpath,input_filname,'_Sig_E0_S0.mat')); % loads variable 'td_signal'
 
-[u, y, realizations, power_levels] = acquisition(excitationpath);
+Resultpath = fullfile(pwd,'Result','0312','Fast_2',filesep);
+%Resultpath = fullfile(pwd,'Result','0312','Robust_Full',filesep);
+%Resultpath = fullfile(pwd,'Result','0312','Robust_Odd',filesep);
+
+[u, y, realizations, power_levels] = acquisition(Resultpath);
 
 N_tot_sample =  size(u,1);                                  % Total nbre sample for 1 realisation
 N_sample_per = size(td_signal,1);                           % Nbre sample per periode
@@ -119,13 +127,15 @@ G_fast(noiseFreq_new,1) = Y_noise./U(new_noise,1,1);
 %% Robust Method -  EXCITED FREQUENCIES ONLY!!! - CAN USE ALL THE FREQUENCIES FOR THE BIN
 
 Nper_effective = Nperiod-1;
-G_rea = mean(G((4:6:excitedFreq(end)),:,:),2);
+%G_rea = mean(G((4:6:excitedFreq(end)),:,:),2);
+G_rea = mean(G(:,:,:),2);
 G_rea = squeeze(G_rea);
 G_ML = mean(G_rea,2);
 for j = 1 : realizations
     add = 0;
     for i = 1 : Nper_effective
-        sigma = (G((4:6:excitedFreq(end)),i,j)-G_rea(:,j)).^2 ;
+        %sigma = (G((4:6:excitedFreq(end)),i,j)-G_rea(:,j)).^2 ;
+        sigma = abs(G(:,i,j)-G_rea(:,j)).^2 ;
         add = add + sigma;
     end
     sigma_rea(:,j) = add*(1/(Nper_effective*(Nper_effective-1)));
@@ -145,39 +155,42 @@ end
 
 %% Plot FAST Method - 1 realisation
 
-figure;
-for k = 1 : realizations
-    if mod(realizations,3)==0
-    subplot(3,realizations/3,k)
-    else
-    sublplot(2,realizations/2,k)
-    end
-    plot(freq(excitedFreq),db(Y(excitedFreq,1,k)),'o', 'LineWidth', 1);
-    hold on;
-    plot(freq(oddFreq),db(Y(oddFreq,1,k)),'square', 'LineWidth', 1);
-    plot(freq(evenFreq),db(Y(evenFreq,1,k)),'+', 'LineWidth', 1);
-    plot(freq(noiseFreq),db(Y(noiseFreq,1,k)),'x', 'LineWidth', 1);
-    xlim([0 fs/N_sample_per*max(excitedFreq)]);
-    hold off;
-    xlabel('Frequency [Hz]');
-    ylabel('Decibel [dB]');
-    legend('Linear','Odd','Even','Noise');
-    title(['Single realisation - Realisation n° ',k]);
-end
+% figure;
+% for k = 1 : realizations
+%     if mod(realizations,3)==0
+%     subplot(3,realizations/3,k)
+%     else
+%     subplot(2,realizations/2,k)
+%     end
+%     plot(freq(excitedFreq),db(Y(excitedFreq,1,k)),'o', 'LineWidth', 1);
+%     hold on;
+%     plot(freq(oddFreq),db(Y(oddFreq,1,k)),'square', 'LineWidth', 1);
+%     plot(freq(evenFreq),db(Y(evenFreq,1,k)),'+', 'LineWidth', 1);
+%     plot(freq(noiseFreq),db(Y(noiseFreq,1,k)),'x', 'LineWidth', 1);
+%     xlim([0 fs/N_sample_per*max(excitedFreq)]);
+%     hold off;
+%     xlabel('Frequency [Hz]');
+%     ylabel('Decibel [dB]');
+%     legend('Linear','Odd','Even','Noise');
+%     title(['Single realisation - Realisation n° ',k]);
+% end
 
+% OUTPUT - FAST
 figure;
 plot(freq(excitedFreq),db(Y(excitedFreq,1,1)),'o', 'LineWidth', 1);
 hold on;
 plot(freq(oddFreq),db(Y(oddFreq,1,1)),'square', 'LineWidth', 1);
 plot(freq(evenFreq),db(Y(evenFreq,1,1)),'+', 'LineWidth', 1);
 plot(freq(noiseFreq),db(Y(noiseFreq,1,1)),'x', 'LineWidth', 1);
-xlim([0 fs/N_sample_per*max(excitedFreq)]);
+%xlim([0 fs/N_sample_per*max(excitedFreq)]);
+xlim([0 800]);
 hold off;
 xlabel('Frequency [Hz]');
 ylabel('Decibel [dB]');
 legend('Linear','Odd','Even','Noise');
-title('Output Signal - Realisation n° 1');
+title('Output Signal - Fast Method');
 
+%OUTPUT - INPUT - FREQ
 figure;
 subplot(1,2,1)
 plot(freq(excitedFreq),db(Y(excitedFreq,1,1)),'o', 'LineWidth', 1);
@@ -188,17 +201,19 @@ subplot(1,2,2)
 plot(freq(excitedFreq),db(U(excitedFreq,1,1)),'o', 'LineWidth', 1);
 xlabel('Frequency [Hz]');
 ylabel('Decibel [dB]');
-title('Single period - Input'); % Reduction of magnitude of the excited signal due to the zero order holder.
+title('Output & Input - Fast Method'); % Reduction of magnitude of the excited signal due to the zero order holder.
 
 figure;
 
+% FRF - FAST
 plot(freq(excitedFreq),db(G_fast(excitedFreq,1)),'o', 'LineWidth', 1);
 hold on;
 plot(freq(oddFreq),db(G_fast(oddFreq,1)),'square', 'LineWidth', 1);
 plot(freq(evenFreq),db(G_fast(evenFreq,1)),'+', 'LineWidth', 1);
 plot(freq(noiseFreq),db(G_fast(noiseFreq,1)),'x', 'LineWidth', 1);
-xlim([0 fs/N_sample_per*max(excitedFreq)]);
-title('Fast Method - FRF'); % Reduction of magnitude of the excited signal due to the zero order holder.
+%xlim([0 fs/N_sample_per*max(excitedFreq)]);
+xlim([0 800]);
+title('FRF - Fast Method'); % Reduction of magnitude of the excited signal due to the zero order holder.
 xlabel('Frequency [Hz]');
 ylabel('Decibel [dB]');
 legend('Linear','Odd','Even','Noise');
@@ -207,13 +222,48 @@ legend('Linear','Odd','Even','Noise');
 %% Plot Robust Method
 
 figure;
-plot(freq((4:6:excitedFreq(end))),db(G_ML(:,1)),'o', 'LineWidth', 1);
-hold on
-%plot(freq(oddFreq),db(G_ML(oddFreq,1)),'square', 'LineWidth', 1);
-%plot(freq(evenFreq),db(G_ML(evenFreq,1)),'+', 'LineWidth', 1);
-%plot(freq(noiseFreq),db(G_ML(noiseFreq,1)),'x', 'LineWidth', 1);
-xlim([0 fs/N_sample_per*max(excitedFreq)]);
-title('Robust Method')
+subplot(4,1,1);
+plot(freq(1:end),db(G_ML(:,1)),'o', 'LineWidth', 1);
+%xlim([0 fs/N_sample_per*max(excitedFreq)]);
+xlim([0 800]);
+title('Robust Method - G_{bla}')
+xlabel('Frequency [Hz]');
+ylabel('Decibel [dB]');
+subplot(4,1,2);
+plot(freq(1:end),db(sigma_ML(:,1)),'o', 'LineWidth', 1);
+%xlim([0 fs/N_sample_per*max(excitedFreq)]);
+xlim([0 800]);
+title('Total variance');
+xlabel('Frequency [Hz]');
+ylabel('Decibel [dB]');
+subplot(4,1,3);
+plot(freq(1:end),db(sigma_ML(:,1)-mean_variance(:,1)),'o', 'LineWidth', 1);
+%xlim([0 fs/N_sample_per*max(excitedFreq)]);
+xlim([0 800]);
+title('NL Variance')
+xlabel('Frequency [Hz]');
+ylabel('Decibel [dB]');
+subplot(4,1,4);
+plot(freq(1:end),db(mean_variance(:,1)),'o', 'LineWidth', 1);
+%xlim([0 fs/N_sample_per*max(excitedFreq)]);
+xlim([0 800]);
+title('Noise variance')
+xlabel('Frequency [Hz]');
+ylabel('Decibel [dB]');
+
+
+figure;
+plot(freq(1:end),db(sigma_ML(:,1)),'o', 'LineWidth', 1);
+hold on;
+plot(freq(1:end),db(sigma_ML(:,1)-mean_variance(:,1)),'x', 'LineWidth', 1);
+plot(freq(1:end),db(mean_variance(:,1)),'+', 'LineWidth', 1);
+xlim([0 800]);
+legend('Total Variance','NL Variance','Noise Variance')
+title('Variance level comparison')
+xlabel('Frequency [Hz]');
+ylabel('Decibel [dB]');
+
+
 
 
 
